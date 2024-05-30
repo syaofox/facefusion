@@ -31,7 +31,9 @@ def get_temp_file_path(target_path : str) -> str:
 
 def get_temp_directory_path(target_path : str) -> str:
 	target_name, _ = os.path.splitext(os.path.basename(target_path))
-	temp_directory_path = os.path.join(tempfile.gettempdir(), 'facefusion')
+	# temp_directory_path = os.path.join(tempfile.gettempdir(), 'facefusion')
+	temp_directory_path = os.path.join(os.getcwd(),'TEMP','facefusion')
+
 	return os.path.join(temp_directory_path, target_name)
 
 

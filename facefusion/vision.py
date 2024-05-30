@@ -108,6 +108,15 @@ def detect_video_fps(video_path : str) -> Optional[float]:
 			return video_fps
 	return None
 
+def detect_video_bitrate(video_path: str) -> Optional[float]:
+    if is_video(video_path):
+        if is_windows():
+            video_path = sanitize_path_for_windows(video_path)
+        video_capture = cv2.VideoCapture(str(video_path))
+        if video_capture.isOpened():
+            return video_capture.get(cv2.CAP_PROP_BITRATE)
+    return None
+
 
 def restrict_video_fps(video_path : str, fps : Fps) -> Fps:
 	if is_video(video_path):
