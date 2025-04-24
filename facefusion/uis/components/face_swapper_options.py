@@ -95,6 +95,7 @@ def update_face_swapper_pixel_boost(face_swapper_pixel_boost : str) -> None:
 
 def update_face_swapper_vr_mode(face_swapper_vr_mode : bool) -> gradio.Dropdown:
 	state_manager.set_item('face_swapper_vr_mode', face_swapper_vr_mode)
+	# 立即返回下拉框的可见性，确保UI状态更新
 	return gradio.Dropdown(visible = face_swapper_vr_mode)
 
 
