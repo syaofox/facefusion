@@ -11,7 +11,7 @@ from facefusion import logger, process_manager, state_manager, wording
 from facefusion.filesystem import remove_file
 from facefusion.temp_helper import get_temp_file_path, get_temp_frame_paths, get_temp_frames_pattern
 from facefusion.typing import AudioBuffer, Fps, OutputVideoPreset, UpdateProgress
-from facefusion.vision import count_trim_frame_total, detect_video_duration, restrict_video_fps
+from facefusion.vision import count_trim_frame_total, detect_video_duration, restrict_video_fps, detect_bitrate
 
 
 def run_ffmpeg_with_progress(args: List[str], update_progress : UpdateProgress) -> subprocess.Popen[bytes]:
@@ -117,6 +117,22 @@ def merge_video(target_path : str, output_video_resolution : str, output_video_f
 	if output_video_encoder in [ 'h264_nvenc', 'hevc_nvenc' ]:
 		output_video_compression = round(51 - (output_video_quality * 0.51))
 		commands.extend([ '-cq', str(output_video_compression), '-preset', map_nvenc_preset(output_video_preset) ])
+
+	if output_video_encoder in [ 'nvenc_bitrate' ]:
+		bitrate = detect_bitrate(target_path)
+		if bitrate:
+			print(f"获取到视频比特率: {bitrate} Kbps")
+			encoder = 'h264_nvenc'
+			commands = ["-hwaccel", "auto", "-framerate", str(temp_video_fps), "-i", temp_frames_pattern, "-c:v", encoder, "-b:v", f"{bitrate}k", "-preset", map_nvenc_preset(state_manager.get_item("output_video_preset")), "-r", str(output_video_fps)]
+			commands.extend(["-pix_fmt", "yuv420p", "-colorspace", "bt709"])
+			commands.extend(["-c:a", "aac", "-strict", "experimental", "-b:a", "128k"])
+			commands.extend(["-y", temp_file_path])
+			return run_ffmpeg(commands).returncode == 0
+		else:
+			print("无法获取视频比特率，使用原来的CQ模式作为后备方案")
+			output_video_compression = round(51 - (output_video_quality * 0.51))
+			commands.extend([ '-cq', str(output_video_compression), '-preset', map_nvenc_preset(output_video_preset) ])
+
 	if output_video_encoder in [ 'h264_amf', 'hevc_amf' ]:
 		output_video_compression = round(51 - (output_video_quality * 0.51))
 		commands.extend([ '-qp_i', str(output_video_compression), '-qp_p', str(output_video_compression), '-quality', map_amf_preset(output_video_preset) ])
