@@ -366,9 +366,9 @@ def register_args(program : ArgumentParser) -> None:
 		group_processors.add_argument('--face-swapper-model', help = wording.get('help.face_swapper_model'), default = config.get_str_value('processors', 'face_swapper_model', 'inswapper_128_fp16'), choices = processors_choices.face_swapper_models)
 		known_args, _ = program.parse_known_args()
 		face_swapper_pixel_boost_choices = processors_choices.face_swapper_set.get(known_args.face_swapper_model)
-		group_processors.add_argument('--face-swapper-pixel-boost', help = wording.get('help.face_swapper_pixel_boost'), default = config.get_str_value('processors.face_swapper_pixel_boost', get_first(face_swapper_pixel_boost_choices)), choices = face_swapper_pixel_boost_choices)
-		group_processors.add_argument('--face-swapper-vr-mode', help = wording.get('help.face_swapper_vr_mode'), action = 'store_true', default = config.get_bool_value('processors.face_swapper_vr_mode', False))
-		group_processors.add_argument('--face-swapper-vr-mode-split', help = wording.get('help.face_swapper_vr_mode_split'), default = config.get_str_value('processors.face_swapper_vr_mode_split', 'horizontal'), choices = ['horizontal', 'vertical'])
+		group_processors.add_argument('--face-swapper-pixel-boost', help = wording.get('help.face_swapper_pixel_boost'), default = config.get_str_value('processors', 'face_swapper_pixel_boost', get_first(face_swapper_pixel_boost_choices)), choices = face_swapper_pixel_boost_choices)
+		group_processors.add_argument('--face-swapper-vr-mode', help = wording.get('help.face_swapper_vr_mode'), action = 'store_true', default = config.get_bool_value('processors', 'face_swapper_vr_mode', False))
+		group_processors.add_argument('--face-swapper-vr-mode-split', help = wording.get('help.face_swapper_vr_mode_split'), default = config.get_str_value('processors', 'face_swapper_vr_mode_split', 'horizontal'), choices = ['horizontal', 'vertical'])
 		facefusion.jobs.job_store.register_step_keys([ 'face_swapper_model', 'face_swapper_pixel_boost', 'face_swapper_vr_mode', 'face_swapper_vr_mode_split' ])
 
 

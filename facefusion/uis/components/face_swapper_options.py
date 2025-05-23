@@ -40,18 +40,13 @@ def render() -> None:
 		visible = has_face_swapper
 	)
 	
-	# 将后端英文模式映射为UI显示中文
-	mode_mapping = {
-		'horizontal': '水平分割',
-		'vertical': '垂直分割'
-	}
+
 	current_mode = state_manager.get_item('face_swapper_vr_mode_split')
-	ui_mode = mode_mapping.get(current_mode, '水平分割')
 	
 	FACE_SWAPPER_VR_MODE_SPLIT_DROPDOWN = gradio.Dropdown(
 		label = wording.get('uis.face_swapper_vr_mode_split_dropdown'),
-		choices = ['水平分割', '垂直分割'],
-		value = ui_mode,
+		choices = ['horizontal', 'vertical'],
+		value = current_mode,
 		visible = has_face_swapper and state_manager.get_item('face_swapper_vr_mode')
 	)
 	register_ui_component('face_swapper_model_dropdown', FACE_SWAPPER_MODEL_DROPDOWN)
@@ -100,10 +95,4 @@ def update_face_swapper_vr_mode(face_swapper_vr_mode : bool) -> gradio.Dropdown:
 
 
 def update_face_swapper_vr_mode_split(face_swapper_vr_mode_split : str) -> None:
-	# 将UI中的中文选项转换为后端处理需要的英文选项
-	mode_mapping = {
-		'水平分割': 'horizontal',
-		'垂直分割': 'vertical'
-	}
-	backend_mode = mode_mapping.get(face_swapper_vr_mode_split, 'horizontal')
-	state_manager.set_item('face_swapper_vr_mode_split', backend_mode)
+	state_manager.set_item('face_swapper_vr_mode_split', face_swapper_vr_mode_split)
