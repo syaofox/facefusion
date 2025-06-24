@@ -154,6 +154,8 @@ def listen() -> None:
 		'face_enhancer_model_dropdown',
 		'face_swapper_model_dropdown',
 		'face_swapper_pixel_boost_dropdown',
+		'face_swapper_vr_mode_checkbox',
+		'face_swapper_vr_mode_split_dropdown',
 		'frame_colorizer_model_dropdown',
 		'frame_enhancer_model_dropdown',
 		'lip_syncer_model_dropdown',
