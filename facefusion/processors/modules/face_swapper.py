@@ -440,12 +440,16 @@ def register_args(program : ArgumentParser) -> None:
 		known_args, _ = program.parse_known_args()
 		face_swapper_pixel_boost_choices = processors_choices.face_swapper_set.get(known_args.face_swapper_model)
 		group_processors.add_argument('--face-swapper-pixel-boost', help = wording.get('help.face_swapper_pixel_boost'), default = config.get_str_value('processors', 'face_swapper_pixel_boost', get_first(face_swapper_pixel_boost_choices)), choices = face_swapper_pixel_boost_choices)
-		facefusion.jobs.job_store.register_step_keys([ 'face_swapper_model', 'face_swapper_pixel_boost' ])
+		group_processors.add_argument('--face-swapper-vr-mode', help = wording.get('help.face_swapper_vr_mode'), action = 'store_true', default = config.get_bool_value('processors', 'face_swapper_vr_mode', False))
+		group_processors.add_argument('--face-swapper-vr-mode-split', help = wording.get('help.face_swapper_vr_mode_split'), default = config.get_str_value('processors', 'face_swapper_vr_mode_split', 'horizontal'), choices = ['horizontal', 'vertical'])
+		facefusion.jobs.job_store.register_step_keys([ 'face_swapper_model', 'face_swapper_pixel_boost', 'face_swapper_vr_mode', 'face_swapper_vr_mode_split' ])
 
 
 def apply_args(args : Args, apply_state_item : ApplyStateItem) -> None:
 	apply_state_item('face_swapper_model', args.get('face_swapper_model'))
 	apply_state_item('face_swapper_pixel_boost', args.get('face_swapper_pixel_boost'))
+	apply_state_item('face_swapper_vr_mode', args.get('face_swapper_vr_mode'))
+	apply_state_item('face_swapper_vr_mode_split', args.get('face_swapper_vr_mode_split'))
 
 
 def pre_check() -> bool:
@@ -639,27 +643,91 @@ def normalize_crop_frame(crop_vision_frame : VisionFrame) -> VisionFrame:
 def get_reference_frame(source_face : Face, target_face : Face, temp_vision_frame : VisionFrame) -> VisionFrame:
 	return swap_face(source_face, target_face, temp_vision_frame)
 
+def split_frame_for_vr(vision_frame: VisionFrame) -> Tuple[VisionFrame, VisionFrame]:
+	"""Split a frame into two parts for VR processing"""
+	height, width = vision_frame.shape[:2]
+	split_mode = state_manager.get_item('face_swapper_vr_mode_split')
+	
+	if split_mode == 'horizontal':
+		left_frame = vision_frame[:, :width // 2]
+		right_frame = vision_frame[:, width // 2:]
+		return left_frame, right_frame
+	else:  # vertical split
+		top_frame = vision_frame[:height // 2]
+		bottom_frame = vision_frame[height // 2:]
+		return top_frame, bottom_frame
 
+
+def merge_frames_for_vr(frame1: VisionFrame, frame2: VisionFrame) -> VisionFrame:
+	"""Merge two processed frames back into a single frame"""
+	split_mode = state_manager.get_item('face_swapper_vr_mode_split')
+	
+	if split_mode == 'horizontal':
+		return numpy.hstack((frame1, frame2))
+	else:  # vertical split
+		return numpy.vstack((frame1, frame2))
+	
 def process_frame(inputs : FaceSwapperInputs) -> VisionFrame:
 	reference_faces = inputs.get('reference_faces')
 	source_face = inputs.get('source_face')
 	target_vision_frame = inputs.get('target_vision_frame')
-	many_faces = sort_and_filter_faces(get_many_faces([ target_vision_frame ]))
 
-	if state_manager.get_item('face_selector_mode') == 'many':
-		if many_faces:
-			for target_face in many_faces:
+	
+	# Check if VR mode is enabled
+	if state_manager.get_item('face_swapper_vr_mode'):
+		frame1, frame2 = split_frame_for_vr(target_vision_frame)
+		
+		# Process each part separately
+		many_faces1 = sort_and_filter_faces(get_many_faces([frame1]))
+		many_faces2 = sort_and_filter_faces(get_many_faces([frame2]))
+		
+		if state_manager.get_item('face_selector_mode') == 'many':
+			if many_faces1:
+				for target_face in many_faces1:
+					frame1 = swap_face(source_face, target_face, frame1)
+			if many_faces2:
+				for target_face in many_faces2:
+					frame2 = swap_face(source_face, target_face, frame2)
+					
+		if state_manager.get_item('face_selector_mode') == 'one':
+			target_face1 = get_one_face(many_faces1)
+			if target_face1:
+				frame1 = swap_face(source_face, target_face1, frame1)
+				
+			target_face2 = get_one_face(many_faces2)
+			if target_face2:
+				frame2 = swap_face(source_face, target_face2, frame2)
+				
+		if state_manager.get_item('face_selector_mode') == 'reference':
+			similar_faces1 = find_similar_faces(many_faces1, reference_faces, state_manager.get_item('reference_face_distance'))
+			if similar_faces1:
+				for similar_face in similar_faces1:
+					frame1 = swap_face(source_face, similar_face, frame1)
+					
+			similar_faces2 = find_similar_faces(many_faces2, reference_faces, state_manager.get_item('reference_face_distance'))
+			if similar_faces2:
+				for similar_face in similar_faces2:
+					frame2 = swap_face(source_face, similar_face, frame2)
+					
+		# Combine the processed frames back into one
+		return merge_frames_for_vr(frame1, frame2)
+	else:
+		many_faces = sort_and_filter_faces(get_many_faces([ target_vision_frame ]))
+
+		if state_manager.get_item('face_selector_mode') == 'many':
+			if many_faces:
+				for target_face in many_faces:
+					target_vision_frame = swap_face(source_face, target_face, target_vision_frame)
+		if state_manager.get_item('face_selector_mode') == 'one':
+			target_face = get_one_face(many_faces)
+			if target_face:
 				target_vision_frame = swap_face(source_face, target_face, target_vision_frame)
-	if state_manager.get_item('face_selector_mode') == 'one':
-		target_face = get_one_face(many_faces)
-		if target_face:
-			target_vision_frame = swap_face(source_face, target_face, target_vision_frame)
-	if state_manager.get_item('face_selector_mode') == 'reference':
-		similar_faces = find_similar_faces(many_faces, reference_faces, state_manager.get_item('reference_face_distance'))
-		if similar_faces:
-			for similar_face in similar_faces:
-				target_vision_frame = swap_face(source_face, similar_face, target_vision_frame)
-	return target_vision_frame
+		if state_manager.get_item('face_selector_mode') == 'reference':
+			similar_faces = find_similar_faces(many_faces, reference_faces, state_manager.get_item('reference_face_distance'))
+			if similar_faces:
+				for similar_face in similar_faces:
+					target_vision_frame = swap_face(source_face, similar_face, target_vision_frame)
+		return target_vision_frame
 
 
 def process_frames(source_paths : List[str], queue_payloads : List[QueuePayload], update_progress : UpdateProgress) -> None:
