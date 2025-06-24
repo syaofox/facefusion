@@ -1,0 +1,50 @@
+[project]
+name = "facefusion"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "torch",
+    "torchvision",
+    "torchaudio",
+    "tensorrt",
+    "gradio==5.25.2",
+    "gradio-rangeslider==0.0.8",
+    "numpy==2.2.4",
+    "onnx==1.17.0",
+    "onnxruntime==1.22.0",
+    "opencv-python==4.11.0.86",
+    "psutil==7.0.0",
+    "tqdm==4.67.1",
+    "scipy==1.15.2",
+    "onnxruntime-gpu==1.20.1",   
+    "onnxruntime-openvino==1.20.0",
+    "onnxruntime-directml==1.17.3; sys_platform == 'win32'",
+]
+
+
+
+[tool.uv.sources]
+torch = [
+  { index = "pytorch-cu126", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+]
+torchvision = [
+  { index = "pytorch-cu126", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+]
+torchaudio = [
+  { index = "pytorch-cu126", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+]
+tensorrt = [
+  { index = "tensorrt", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+]
+
+[[tool.uv.index]]
+name = "pytorch-cu126"
+url = "https://download.pytorch.org/whl/cu126"
+explicit = true
+
+[[tool.uv.index]]
+name = "tensorrt"
+url = "https://pypi.nvidia.com"
+explicit = true
