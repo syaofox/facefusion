@@ -18,7 +18,7 @@ dependencies = [
     "psutil==7.0.0",
     "tqdm==4.67.1",
     "scipy==1.15.2",
-    "onnxruntime-gpu==1.20.1",   
+    "onnxruntime-gpu==1.20.1",
     "onnxruntime-openvino==1.20.0",
     "onnxruntime-directml==1.17.3; sys_platform == 'win32'",
 ]
